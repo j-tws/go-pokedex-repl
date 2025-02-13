@@ -6,9 +6,15 @@ import (
 	"os"
 )
 
+type config struct {
+	next			string
+	previous 	*string
+}
+
 func main(){
 	commandsMap := cliCommandMap()
 	scanner := bufio.NewScanner(os.Stdin)
+	config := config{}
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -21,6 +27,6 @@ func main(){
 			continue
 		}
 
-		command.callback()
+		command.callback(&config)
 	}
 }
