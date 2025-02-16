@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"internal/pokecache"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -18,8 +20,20 @@ func cleanInput(text string) []string{
 	return output
 }
 
-func makeGetRequest(url string) (locationArea, error) {
+func makeGetRequest(url string, cache *pokecache.Cache) (locationArea, error) {
 	var locationArea locationArea
+	// go hit the cache
+	cachedData, exist := cache.Get(url)
+
+	if exist {
+		if err := json.Unmarshal(cachedData, &locationArea); err != nil {
+			return locationArea, fmt.Errorf("Error decoding response body: %w", err)
+		}
+	
+		return locationArea, nil
+	}
+
+	// if cache miss
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
@@ -35,8 +49,15 @@ func makeGetRequest(url string) (locationArea, error) {
 
 	defer res.Body.Close()
 
-	decoder := json.NewDecoder(res.Body)
-	if err := decoder.Decode(&locationArea); err != nil {
+	data, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return locationArea, fmt.Errorf("Error reading response: %w", err)
+	}
+
+	cache.Add(url, data)
+
+	if err := json.Unmarshal(data, &locationArea); err != nil {
 		return locationArea, fmt.Errorf("Error decoding response body: %w", err)
 	}
 

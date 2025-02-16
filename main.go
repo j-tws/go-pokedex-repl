@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"internal/pokecache"
 	"os"
+	"time"
 )
 
 type config struct {
@@ -15,6 +17,7 @@ func main(){
 	commandsMap := cliCommandMap()
 	scanner := bufio.NewScanner(os.Stdin)
 	config := config{}
+	newCache := pokecache.NewCache(1 * time.Hour)
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -27,6 +30,6 @@ func main(){
 			continue
 		}
 
-		command.callback(&config)
+		command.callback(&config, &newCache)
 	}
 }

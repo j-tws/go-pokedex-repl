@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 type context struct {
 	input string

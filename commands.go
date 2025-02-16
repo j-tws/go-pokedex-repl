@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"internal/pokecache"
 	"os"
 )
 
@@ -10,7 +11,7 @@ const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
 type cliCommand struct {
 	name					string
 	description 	string
-	callback			func(*config) error
+	callback			func(*config, *pokecache.Cache) error
 }
 
 type locationArea struct {
@@ -48,13 +49,13 @@ func cliCommandMap() map[string]cliCommand {
 	}
 }
 
-func commandExit(c *config) error {
+func commandExit(c *config, cache *pokecache.Cache) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(c *config) error {
+func commandHelp(c *config, cache *pokecache.Cache) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -66,7 +67,7 @@ func commandHelp(c *config) error {
 	return nil
 }
 
-func commandMap(c *config) error {
+func commandMap(c *config, cache *pokecache.Cache) error {
 	var url string
 
 	if c.next == "" {
@@ -75,7 +76,7 @@ func commandMap(c *config) error {
 		url = c.next
 	}
 
-	locationArea, err := makeGetRequest(url)
+	locationArea, err := makeGetRequest(url, cache)
 
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
@@ -90,7 +91,7 @@ func commandMap(c *config) error {
 	return nil
 }
 
-func commandMapB(c *config) error {
+func commandMapB(c *config, cache *pokecache.Cache) error {
 	if c.previous == nil {
 		fmt.Println("you're on the first page")
 		return nil
@@ -98,7 +99,7 @@ func commandMapB(c *config) error {
 
 	url := *c.previous
 
-	locationArea, err := makeGetRequest(url)
+	locationArea, err := makeGetRequest(url, cache)
 
 	for _, area := range locationArea.Results {
 		fmt.Println(area.Name)
