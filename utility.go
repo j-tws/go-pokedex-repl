@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+type pokeStructs interface {
+	locationArea | locationAreaDetails
+}
+
 func cleanInput(text string) []string{
 	output := []string{}
 	slice := strings.Split(strings.Trim(text, " "), " ")
@@ -20,31 +24,30 @@ func cleanInput(text string) []string{
 	return output
 }
 
-func makeGetRequest(url string, cache *pokecache.Cache) (locationArea, error) {
-	var locationArea locationArea
+func makeGetRequest[T pokeStructs](url string, cache *pokecache.Cache, pokeStruct T) (T, error) {
 	// go hit the cache
 	cachedData, exist := cache.Get(url)
 
 	if exist {
-		if err := json.Unmarshal(cachedData, &locationArea); err != nil {
-			return locationArea, fmt.Errorf("Error decoding response body: %w", err)
+		if err := json.Unmarshal(cachedData, &pokeStruct); err != nil {
+			return pokeStruct, fmt.Errorf("Error decoding response body: %w", err)
 		}
 	
-		return locationArea, nil
+		return pokeStruct, nil
 	}
 
 	// if cache miss
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return locationArea, fmt.Errorf("Error forming request: %w", err)
+		return pokeStruct, fmt.Errorf("Error forming request: %w", err)
 	}
 
 	client := http.Client{}
 	res, err := client.Do(req)
 
 	if err != nil {
-		return locationArea, fmt.Errorf("Error making request: %w", err)
+		return pokeStruct, fmt.Errorf("Error making request: %w", err)
 	}
 
 	defer res.Body.Close()
@@ -52,16 +55,16 @@ func makeGetRequest(url string, cache *pokecache.Cache) (locationArea, error) {
 	data, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		return locationArea, fmt.Errorf("Error reading response: %w", err)
+		return pokeStruct, fmt.Errorf("Error reading response: %w", err)
 	}
 
 	cache.Add(url, data)
 
-	if err := json.Unmarshal(data, &locationArea); err != nil {
-		return locationArea, fmt.Errorf("Error decoding response body: %w", err)
+	if err := json.Unmarshal(data, &pokeStruct); err != nil {
+		return pokeStruct, fmt.Errorf("Error decoding response body: %w", err)
 	}
 
-	return locationArea, nil
+	return pokeStruct, nil
 }
 
 func setConfig(c *config, l locationArea){

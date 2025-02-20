@@ -6,12 +6,12 @@ import (
 	"os"
 )
 
-const locationAreaURL = "https://pokeapi.co/api/v2/location-area"
+const locationAreaURL = "https://pokeapi.co/api/v2/location-area/"
 
 type cliCommand struct {
 	name					string
 	description 	string
-	callback			func(*config, *pokecache.Cache) error
+	callback			func(*config, *pokecache.Cache, string) error
 }
 
 type locationArea struct {
@@ -22,6 +22,14 @@ type locationArea struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"results"`
+}
+
+type locationAreaDetails struct {
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
 }
 
 func cliCommandMap() map[string]cliCommand {
@@ -46,16 +54,21 @@ func cliCommandMap() map[string]cliCommand {
 			description: "Display the previous 20 location areas",
 			callback: commandMapB,
 		},
+		"explore": {
+			name: "explore",
+			description: "Get pokemon of the area",
+			callback: commandExplore,
+		},
 	}
 }
 
-func commandExit(c *config, cache *pokecache.Cache) error {
+func commandExit(c *config, cache *pokecache.Cache, area string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(c *config, cache *pokecache.Cache) error {
+func commandHelp(c *config, cache *pokecache.Cache, area string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -67,8 +80,9 @@ func commandHelp(c *config, cache *pokecache.Cache) error {
 	return nil
 }
 
-func commandMap(c *config, cache *pokecache.Cache) error {
+func commandMap(c *config, cache *pokecache.Cache, area string) error {
 	var url string
+	var locationArea locationArea
 
 	if c.next == "" {
 		url = locationAreaURL
@@ -76,32 +90,33 @@ func commandMap(c *config, cache *pokecache.Cache) error {
 		url = c.next
 	}
 
-	locationArea, err := makeGetRequest(url, cache)
+	locationAreaData, err := makeGetRequest(url, cache, locationArea)
 
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}
 
-	for _, area := range locationArea.Results {
+	for _, area := range locationAreaData.Results {
 		fmt.Println(area.Name)
 	}
 	
-	setConfig(c, locationArea)
+	setConfig(c, locationAreaData)
 
 	return nil
 }
 
-func commandMapB(c *config, cache *pokecache.Cache) error {
+func commandMapB(c *config, cache *pokecache.Cache, area string) error {
+	var locationArea locationArea
+
 	if c.previous == nil {
 		fmt.Println("you're on the first page")
 		return nil
 	}
 
 	url := *c.previous
+	locationAreaData, err := makeGetRequest(url, cache, locationArea)
 
-	locationArea, err := makeGetRequest(url, cache)
-
-	for _, area := range locationArea.Results {
+	for _, area := range locationAreaData.Results {
 		fmt.Println(area.Name)
 	}
 
@@ -109,7 +124,25 @@ func commandMapB(c *config, cache *pokecache.Cache) error {
 		return fmt.Errorf("error making request: %w", err)
 	}
 
-	setConfig(c, locationArea)
+	setConfig(c, locationAreaData)
+
+	return nil
+}
+
+func commandExplore(c *config, cache *pokecache.Cache, areaName string) error {
+	url := locationAreaURL + areaName
+
+	var locationAreaDetails locationAreaDetails
+
+	locationAreaDetailsData, err := makeGetRequest(url, cache, locationAreaDetails)
+
+	if err != nil {
+		return fmt.Errorf("error making request: %w", err)
+	}
+
+	for _, pokemonEncounter := range locationAreaDetailsData.PokemonEncounters {
+		fmt.Println(pokemonEncounter.Pokemon.Name)
+	}
 
 	return nil
 }
