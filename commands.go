@@ -75,6 +75,11 @@ func cliCommandMap() map[string]cliCommand {
 			description: "Get the stats of a caught pokemon",
 			callback: commandInspect,
 		},
+		"pokedex": {
+			name: "pokedex",
+			description: "List all pokemons in pokedex",
+			callback: commandPokedex,
+		},
 	}
 }
 
@@ -184,6 +189,7 @@ func commandCatch(
 	if num < 100 {
 		pokedex[pokemonName] = pokemonData
 		fmt.Printf("%v was caught!\n", pokemonName)
+		fmt.Println("You may now inspect it with the inspect command.")
 	} else {
 		fmt.Printf("%v escaped\n", pokemonName)
 	}
@@ -215,6 +221,21 @@ func commandInspect(
 	}
 
 	fmt.Println(base + stats + types)
+
+	return nil
+}
+
+func commandPokedex(
+	_ *config,
+	_ *pokecache.Cache,
+	_ string,
+	pokedex map[string]pokeapi.Pokemon,
+) error {
+	fmt.Println("Your Pokedex:")
+
+	for pokemonName := range pokedex {
+		fmt.Printf("  - %v\n", pokemonName)
+	}
 
 	return nil
 }
