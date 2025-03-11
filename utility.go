@@ -10,7 +10,7 @@ import (
 )
 
 type pokeStructs interface {
-	locationArea | locationAreaDetails
+	locationArea | locationAreaDetails | pokemon
 }
 
 func cleanInput(text string) []string{

@@ -18,7 +18,8 @@ func main(){
 	scanner := bufio.NewScanner(os.Stdin)
 	config := config{}
 	newCache := pokecache.NewCache(1 * time.Hour)
-	var areaName string
+	pokedex := map[string]pokemon{}
+	var param string
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -27,7 +28,7 @@ func main(){
 
 		command, ok := commandsMap[input[0]]
 		if len(input) > 1 {
-			areaName = input[1]
+			param = input[1]
 		}
 
 		if !ok {
@@ -35,7 +36,7 @@ func main(){
 			continue
 		}
 
-		err := command.callback(&config, &newCache, areaName)
+		err := command.callback(&config, &newCache, param, pokedex)
 
 		if err != nil {
 			fmt.Println(err)
