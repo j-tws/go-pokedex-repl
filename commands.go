@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"internal/pokecache"
 	"math/rand"
 	"os"
+
+	"github.com/j-tws/go-pokedex-repl/internal/pokeapi"
+	"github.com/j-tws/go-pokedex-repl/internal/pokecache"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 type cliCommand struct {
 	name					string
 	description 	string
-	callback			func(*config, *pokecache.Cache, string, map[string]pokemon) error
+	callback			func(*config, *pokecache.Cache, string, map[string]pokeapi.Pokemon) error
 }
 
 type locationArea struct {
@@ -34,10 +36,6 @@ type locationAreaDetails struct {
 			Name string `json:"name"`
 		} `json:"pokemon"`
 	} `json:"pokemon_encounters"`
-}
-
-type pokemon struct {
-	BaseExperience int `json:"base_experience"`
 }
 
 func cliCommandMap() map[string]cliCommand {
@@ -72,16 +70,21 @@ func cliCommandMap() map[string]cliCommand {
 			description: "Catch a pokemon!",
 			callback: commandCatch,
 		},
+		"inspect": {
+			name: "inspect",
+			description: "Get the stats of a caught pokemon",
+			callback: commandInspect,
+		},
 	}
 }
 
-func commandExit(_ *config, _ *pokecache.Cache, _ string, _ map[string]pokemon) error {
+func commandExit(_ *config, _ *pokecache.Cache, _ string, _ map[string]pokeapi.Pokemon) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(_ *config, _ *pokecache.Cache, _ string, _ map[string]pokemon) error {
+func commandHelp(_ *config, _ *pokecache.Cache, _ string, _ map[string]pokeapi.Pokemon) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -93,7 +96,7 @@ func commandHelp(_ *config, _ *pokecache.Cache, _ string, _ map[string]pokemon) 
 	return nil
 }
 
-func commandMap(c *config, cache *pokecache.Cache, _ string, _ map[string]pokemon) error {
+func commandMap(c *config, cache *pokecache.Cache, _ string, _ map[string]pokeapi.Pokemon) error {
 	var url string
 	var locationArea locationArea
 
@@ -118,7 +121,7 @@ func commandMap(c *config, cache *pokecache.Cache, _ string, _ map[string]pokemo
 	return nil
 }
 
-func commandMapB(c *config, cache *pokecache.Cache, _ string, _ map[string]pokemon) error {
+func commandMapB(c *config, cache *pokecache.Cache, _ string, _ map[string]pokeapi.Pokemon) error {
 	var locationArea locationArea
 
 	if c.previous == nil {
@@ -142,7 +145,7 @@ func commandMapB(c *config, cache *pokecache.Cache, _ string, _ map[string]pokem
 	return nil
 }
 
-func commandExplore(c *config, cache *pokecache.Cache, areaName string, _ map[string]pokemon) error {
+func commandExplore(c *config, cache *pokecache.Cache, areaName string, _ map[string]pokeapi.Pokemon) error {
 	url := locationAreaURL + areaName
 
 	var locationAreaDetails locationAreaDetails
@@ -164,10 +167,10 @@ func commandCatch(
 	c *config,
 	cache *pokecache.Cache,
 	pokemonName string,
-	pokedex map[string]pokemon,
+	pokedex map[string]pokeapi.Pokemon,
 ) error {
 	url := pokemonURL + pokemonName
-	var pokemonStruct pokemon
+	var pokemonStruct pokeapi.Pokemon
 
 	pokemonData, err := makeGetRequest(url, cache, pokemonStruct)
 
@@ -184,6 +187,34 @@ func commandCatch(
 	} else {
 		fmt.Printf("%v escaped\n", pokemonName)
 	}
+
+	return nil
+}
+
+func commandInspect(
+	_ *config,
+	_ *pokecache.Cache,
+	pokemon string,
+	pokedex map[string]pokeapi.Pokemon,
+) error {
+	p, exist := pokedex[pokemon]
+
+	if !exist {
+		return fmt.Errorf("you have not caught that pokemon")
+	}
+
+	base := fmt.Sprintf("Name: %v\nHeight: %v\nWeight: %v\n", p.Name, p.Height, p.Weight)
+	stats := "Stats:\n"
+	types := "Types:\n"
+
+	for _, stat := range p.Stats {
+		stats = stats + fmt.Sprintf("  -%v: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+	for _, stat := range p.Types {
+		types = types + fmt.Sprintf("  -%v\n", stat.Type.Name)
+	}
+
+	fmt.Println(base + stats + types)
 
 	return nil
 }

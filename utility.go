@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"internal/pokecache"
+	"github.com/j-tws/go-pokedex-repl/internal/pokecache"
+	"github.com/j-tws/go-pokedex-repl/internal/pokeapi"
 	"io"
 	"net/http"
 	"strings"
 )
 
 type pokeStructs interface {
-	locationArea | locationAreaDetails | pokemon
+	locationArea | locationAreaDetails | pokeapi.Pokemon
 }
 
 func cleanInput(text string) []string{

@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"internal/pokecache"
 	"os"
 	"time"
+
+	"github.com/j-tws/go-pokedex-repl/internal/pokeapi"
+	"github.com/j-tws/go-pokedex-repl/internal/pokecache"
 )
 
 type config struct {
@@ -18,7 +20,7 @@ func main(){
 	scanner := bufio.NewScanner(os.Stdin)
 	config := config{}
 	newCache := pokecache.NewCache(1 * time.Hour)
-	pokedex := map[string]pokemon{}
+	pokedex := map[string]pokeapi.Pokemon{}
 	var param string
 
 	for {
